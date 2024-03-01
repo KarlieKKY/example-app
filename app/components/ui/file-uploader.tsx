@@ -33,7 +33,7 @@ export default function FileUploader({
   const defaultCheckExtension = (extension: string) => {
     if (allowedExtensions && !allowedExtensions.includes(extension)) {
       return `Invalid file type. Please select a file with one of these formats: ${allowedExtensions!.join(
-        ",",
+        ","
       )}`;
     }
     return null;
@@ -50,11 +50,20 @@ export default function FileUploader({
   };
 
   const onFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploading(true);
-    await handleUpload(file);
+
+    // Create an array from the FileList and process each file
+    const uploadPromises = Array.from(files).map(handleUpload);
+
+    // Wait for all file uploads to complete
+    await Promise.all(uploadPromises).catch((error) => {
+      // Handle any errors that occur during upload
+      console.error("Error uploading files:", error);
+    });
+
     resetInput();
     setUploading(false);
   };
@@ -69,7 +78,7 @@ export default function FileUploader({
 
     if (isFileSizeExceeded(file)) {
       return onFileUploadError(
-        `File size exceeded. Limit is ${fileSizeLimit / 1024 / 1024} MB`,
+        `File size exceeded. Limit is ${fileSizeLimit / 1024 / 1024} MB`
       );
     }
 
@@ -85,13 +94,14 @@ export default function FileUploader({
         onChange={onFileChange}
         accept={allowedExtensions?.join(",")}
         disabled={config?.disabled || uploading}
+        multiple // allow multiple file selections
       />
       <label
         htmlFor={inputId}
         className={cn(
           buttonVariants({ variant: "secondary", size: "icon" }),
           "cursor-pointer",
-          uploading && "opacity-50",
+          uploading && "opacity-50"
         )}
       >
         {uploading ? (
